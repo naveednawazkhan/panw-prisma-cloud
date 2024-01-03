@@ -108,11 +108,11 @@ resource "aws_instance" "web_instance" {
 
   user_data = <<-EOF
   #!/bin/bash
-  sudo yum update -y
-  sudo yum install wget -y
-  sudo yum install git -y
-  sudo yum install -y yum-utils
-  sudo yum install java-11-openjdk.x86_64 -y
+  sudo apt update -y
+  sudo apt list --upgradable
+  sudo apt install wget -y
+  sudo apt install git -y
+  sudo apt install java-11-openjdk.x86_64 -y
   sudo yum install epel-release -y
   sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
   sudo yum install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
