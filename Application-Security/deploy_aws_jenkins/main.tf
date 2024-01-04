@@ -108,10 +108,10 @@ resource "aws_instance" "web_instance" {
 
   user_data = <<-EOF
   #!/bin/bash
-  sudo apt update -y
+  sudo apt-get update -y
   sudo apt list --upgradable
-  sudo apt install wget -y
-  sudo apt install git -y
+  sudo apt-get install wget -y
+  sudo apt-get install git -y
   sudo apt-get install ca-certificates curl gnupg
   sudo install -m 0755 -d /etc/apt/keyrings
   curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
@@ -121,7 +121,7 @@ resource "aws_instance" "web_instance" {
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
   sudo apt-get update
-  sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
   curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo tee \
   /usr/share/keyrings/jenkins-keyring.asc > /dev/null
   echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
