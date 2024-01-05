@@ -1,3 +1,25 @@
+################################
+## AWS Provider Module - Main ##
+################################
+
+# AWS Provider
+terraform {
+  required_providers {
+    aws = {
+      source = "hashicorp/aws"
+      version = "5.31.0"
+    }
+  }
+}
+
+provider "aws" {
+  access_key = var.aws_access_key
+  secret_key = var.aws_secret_key
+  region     = var.aws_region
+}
+
+
+
 variable "stack_name" {
   default = "naveed-jenkins"
 }
@@ -6,6 +28,7 @@ variable "stack_name" {
 
 resource "aws_vpc" "this" {
   cidr_block = "10.20.0.0/16"
+  enable_dns_hostnames = true
 
   tags = {
     Name = "${var.stack_name}-vpc"
@@ -17,17 +40,20 @@ resource "aws_vpc" "this" {
 resource "aws_subnet" "this_public" {
   vpc_id            = aws_vpc.this.id
   cidr_block        = "10.20.1.0/24"
-  availability_zone = "us-east-1a"
+  availability_zone = "us-west-2a"
 
   tags = {
     Name = "${var.stack_name}-public-subnet"
   }
 }
 
+
+
+
 resource "aws_subnet" "this_private" {
   vpc_id            = aws_vpc.this.id
   cidr_block        = "10.20.2.0/24"
-  availability_zone = "us-east-1a"
+  availability_zone = "us-west-2a"
 
   tags = {
     Name = "${var.stack_name}-private-subnet"
@@ -86,8 +112,10 @@ resource "aws_security_group" "web_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["64.0.175.110/32"]
+    cidr_blocks = ["134.238.163.160/32","165.85.137.123/32"]
   }
+
+
 
   egress {
     from_port   = 0
@@ -97,14 +125,29 @@ resource "aws_security_group" "web_sg" {
   }
 }
 
-resource "aws_instance" "web_instance" {
-  ami           = "ami-053b0d53c279acc90" 
-  instance_type = "t2.medium"
-  key_name      = "ec2-default"
+
+
+resource "aws_instance" "ec2" {
+  ami           = "ami-008fe2fc65df48dac" 
+  instance_type = "t3.medium"
+  key_name      = "NaveedUSwest"
+  
 
   subnet_id                   = aws_subnet.this_public.id
   vpc_security_group_ids      = [aws_security_group.web_sg.id]
-  associate_public_ip_address = true
+  associate_public_ip_address = false
+
+  root_block_device {
+   delete_on_termination = true
+  #  device_name = "/dev/sda1"
+   encrypted = true
+  #  iops = 100
+  #  throughput = 0
+  #  volume_id = "vol-0c165794d5a136af4"
+   volume_size = 30
+   volume_type = "gp2"
+ }
+  
 
   user_data = <<-EOF
   #!/bin/bash
@@ -112,7 +155,7 @@ resource "aws_instance" "web_instance" {
   sudo apt list --upgradable
   sudo apt-get install wget -y
   sudo apt-get install git -y
-  sudo apt install openjdk-11-jre
+  sudo apt install openjdk-11-jre -y
   sudo apt-get install ca-certificates curl gnupg
   sudo install -m 0755 -d /etc/apt/keyrings
   curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
@@ -148,3 +191,22 @@ resource "aws_instance" "web_instance" {
     "Name" : "${var.stack_name}"
   }
 }
+
+# Attaching an ElasticIP to an Instance with a pre-assigned private ip (VPC Only)
+   resource "aws_eip" "elasticip" {
+      domain = "vpc"
+
+      instance                  = aws_instance.ec2.id
+  #   associate_with_private_ip = "10.0.0.12"
+  #   depends_on                = [aws_internet_gateway.gw]
+  }
+
+    output "EIP" {
+      value = aws_eip.elasticip.public_ip
+    }
+
+
+  # resource "aws_eip_association" "eip_assoc" {
+  #   instance_id   = aws_instance.web.id
+  #   allocation_id = aws_eip.eip_manager.id
+  # }
